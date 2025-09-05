@@ -48,3 +48,23 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   depends_on = [kubernetes_service_account.alb_sa]
 }
+
+# Install Argo CD via Helm
+resource "helm_release" "argocd" {
+  name       = "argocd"
+  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+  version    = "5.51.6" # Check for latest: https://artifacthub.io/packages/helm/argo/argo-cd
+
+  set = [
+    {
+      name  = "server.service.type"
+      value = "LoadBalancer" 
+    },
+    {
+      name  = "controller.replicaCount"
+      value = "2"
+    }
+  ]
+}
