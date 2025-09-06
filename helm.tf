@@ -49,23 +49,26 @@ resource "helm_release" "aws_load_balancer_controller" {
   depends_on = [kubernetes_service_account.alb_sa]
 }
 
-# Install Argo CD via Helm
-resource "helm_release" "argocd" {
-  name       = "argocd"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  version    = "5.51.6" # Check for latest: https://artifacthub.io/packages/helm/argo/argo-cd
-  create_namespace = true
-  namespace        = "argocd"
-
-  set = [
-    {
-      name  = "server.service.type"
-      value = "LoadBalancer" 
-    },
-    {
-      name  = "controller.replicaCount"
-      value = "2"
-    }
-  ]
+# Wait for AWS Load Balancer Controller to be ready
+resource "null_resource" "wait_alb_ready" {
+  provisioner "local-exec" {
+    command = "kubectl -n kube-system rollout status deploy/aws-load-balancer-controller --timeout=300s"
+  }
+  depends_on = [helm_release.aws_load_balancer_controller]
 }
+
+# Now install Argo CD
+resource "helm_release" "argocd" {
+  name             = "argocd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  version          = "5.51.6"
+  namespace        = "argocd"
+  create_namespace = true
+
+  set { name = "server.service.type";     value = "LoadBalancer" }
+  set { name = "controller.replicaCount"; value = "2" }
+
+  depends_on = [null_resource.wait_alb_ready]
+}
+
