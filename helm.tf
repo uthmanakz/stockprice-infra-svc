@@ -65,17 +65,19 @@ resource "helm_release" "argocd" {
   namespace        = "argocd"
   create_namespace = true
 
-  set {
-    name  = "server.service.type"
-    value = "LoadBalancer"
-  }
-
-  set {
-    name  = "controller.replicaCount"
-    value = "2"
-  }
+  set = [
+    {
+      name  = "server.service.type"
+      value = "LoadBalancer"
+    },
+    {
+      name  = "controller.replicaCount"
+      value = "2"
+    }
+  ]
 
   depends_on = [null_resource.wait_alb_ready]
 }
+
 
 
