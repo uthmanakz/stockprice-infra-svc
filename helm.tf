@@ -57,7 +57,6 @@ resource "null_resource" "wait_alb_ready" {
   depends_on = [helm_release.aws_load_balancer_controller]
 }
 
-# Now install Argo CD
 resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
@@ -66,9 +65,17 @@ resource "helm_release" "argocd" {
   namespace        = "argocd"
   create_namespace = true
 
-  set { name = "server.service.type";     value = "LoadBalancer" }
-  set { name = "controller.replicaCount"; value = "2" }
+  set {
+    name  = "server.service.type"
+    value = "LoadBalancer"
+  }
+
+  set {
+    name  = "controller.replicaCount"
+    value = "2"
+  }
 
   depends_on = [null_resource.wait_alb_ready]
 }
+
 
