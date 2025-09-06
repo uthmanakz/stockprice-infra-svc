@@ -52,11 +52,11 @@ resource "helm_release" "aws_load_balancer_controller" {
 # Install Argo CD via Helm
 resource "helm_release" "argocd" {
   name       = "argocd"
-  namespace  = kubernetes_namespace.argocd.metadata[0].name
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   version    = "5.51.6" # Check for latest: https://artifacthub.io/packages/helm/argo/argo-cd
   create_namespace = true
+  namespace        = "argocd"
 
   set = [
     {
