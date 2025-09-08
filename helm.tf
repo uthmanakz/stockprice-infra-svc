@@ -49,13 +49,6 @@ resource "helm_release" "aws_load_balancer_controller" {
   depends_on = [kubernetes_service_account.alb_sa]
 }
 
-# Wait for AWS Load Balancer Controller to be ready
-resource "null_resource" "wait_alb_ready" {
-  provisioner "local-exec" {
-    command = "kubectl -n kube-system rollout status deploy/aws-load-balancer-controller --timeout=300s"
-  }
-  depends_on = [helm_release.aws_load_balancer_controller]
-}
 
 resource "helm_release" "argocd" {
   name             = "argocd"
@@ -68,7 +61,7 @@ resource "helm_release" "argocd" {
   set = [
     {
       name  = "server.service.type"
-      value = "LoadBalancer"
+      value = "ClusterIP"
     },
     {
       name  = "controller.replicaCount"
@@ -76,7 +69,17 @@ resource "helm_release" "argocd" {
     }
   ]
 
-  depends_on = [null_resource.wait_alb_ready]
+}
+
+resource "null_resource" "patch_argocd_service" {
+  depends_on = [helm_release.argocd]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      kubectl patch svc argocd-server -n argocd \
+        -p '{"spec": {"type": "LoadBalancer"}}'
+    EOT
+  }
 }
 
 
