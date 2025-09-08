@@ -69,6 +69,8 @@ resource "helm_release" "argocd" {
     }
   ]
 
+  depends_on = [helm_release.aws_load_balancer_controller]
+
 }
 
 resource "null_resource" "patch_argocd_service" {
