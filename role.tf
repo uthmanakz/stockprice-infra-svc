@@ -18,7 +18,7 @@ resource "aws_iam_role" "alb_ingress_role" {
         Action = "sts:AssumeRoleWithWebIdentity",
         Condition = {
           StringEquals = {
-            "${data.terraform_remote_state.eks.outputs.oidc_provider_arn}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller",
+            "${data.terraform_remote_state.eks.outputs.oidc_provider}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller",
             "${data.terraform_remote_state.eks.outputs.oidc_provider}:aud" = "sts.amazonaws.com"
           }
         }
@@ -38,7 +38,10 @@ resource "kubernetes_service_account" "alb_sa" {
     }
   }
 }
-
+resource "aws_iam_role_policy_attachment" "alb_controller_attach" {
+  policy_arn = data.aws_iam_policy.aws_load_balancer_controller.arn
+  role       = aws_iam_role.alb_ingress_role.name
+}
 
 
 # resource "aws_iam_policy" "aws_load_balancer_controller" {
