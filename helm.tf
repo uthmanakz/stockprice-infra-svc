@@ -61,7 +61,7 @@ resource "helm_release" "argocd" {
   set = [
     {
       name  = "server.service.type"
-      value = "ClusterIP"
+      value = "LoadBalancer"
     },
     {
       name  = "controller.replicaCount"
@@ -73,16 +73,16 @@ resource "helm_release" "argocd" {
 
 }
 
-resource "null_resource" "patch_argocd_service" {
-  depends_on = [helm_release.argocd]
+# resource "null_resource" "patch_argocd_service" {
+#   depends_on = [helm_release.argocd]
 
-  provisioner "local-exec" {
-    command = <<EOT
-      kubectl patch svc argocd-server -n argocd \
-        -p '{"spec": {"type": "LoadBalancer"}}'
-    EOT
-  }
-}
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       kubectl patch svc argocd-server -n argocd \
+#         -p '{"spec": {"type": "LoadBalancer"}}'
+#     EOT
+#   }
+# }
 
 
 

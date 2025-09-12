@@ -4,9 +4,29 @@ data "aws_iam_policy" "aws_load_balancer_controller" {
 }
 
 # Look up existing IAM role (IRSA role created already)
-data "aws_iam_role" "alb_ingress_role" {
+resource "aws_iam_role" "alb_ingress_role" {
   name = "eks-alb-ingress-controller"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Federated = data.terraform_remote_state.eks.outputs.oidc_provider_arn
+        },
+        Action = "sts:AssumeRoleWithWebIdentity",
+        Condition = {
+          StringEquals = {
+            "${data.terraform_remote_state.eks.outputs.oidc_provider_arn}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller",
+            "${data.terraform_remote_state.eks.outputs.oidc_provider}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
 }
+
 
 # Create the Kubernetes ServiceAccount with IRSA annotation
 resource "kubernetes_service_account" "alb_sa" {
@@ -14,10 +34,11 @@ resource "kubernetes_service_account" "alb_sa" {
     name      = "aws-load-balancer-controller"
     namespace = "kube-system"
     annotations = {
-      "eks.amazonaws.com/role-arn" = data.aws_iam_role.alb_ingress_role.arn
+      "eks.amazonaws.com/role-arn" = aws_iam_role.alb_ingress_role.arn
     }
   }
 }
+
 
 
 # resource "aws_iam_policy" "aws_load_balancer_controller" {
